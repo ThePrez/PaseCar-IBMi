@@ -1,0 +1,3 @@
+CMD  PROMPT('BASH')
+            PARM       KWD(CMD) TYPE(*CHAR) LEN(1024) MIN(1) +
+                         PROMPT('CMD')
