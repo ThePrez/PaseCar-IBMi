@@ -1,0 +1,3 @@
+
+
+CRTPGM PGM(&O/&N) MODULE(&N) USRPRF(*USER) TEXT('Bash Utility') ACTGRP(*CALLER)

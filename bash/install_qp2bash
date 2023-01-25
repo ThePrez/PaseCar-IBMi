@@ -1,0 +1,43 @@
+#!/QOpenSys/pkgs/bin/bash
+
+BUILDLIB=${BUILDLIB:-CALLPASE}
+TGTRLS=${TGTRLS:-*CURRENT}
+
+oopsies() {
+  echo ''
+  echo ''
+  echo '-------------------------------------------------------'
+  echo 'Cleaning up from error...'  
+  /QOpenSys/usr/bin/system -Kkpiebv "DLTMOD MODULE(${BUILDLIB}/BASH)" || echo "module doesn't exist"
+  /QOpenSys/usr/bin/system -Kkpiebv "DLTPGM PGM(${BUILDLIB}/BASH)" || echo "program doesn't exist"
+  /QOpenSys/usr/bin/system -Kkpiebv "DLTMOD MODULE(${BUILDLIB}/SHELL3)" || echo "module doesn't exist"
+  /QOpenSys/usr/bin/system -Kkpiebv "DLTPGM PGM(${BUILDLIB}/SHELL3)" || echo "program doesn't exist"
+  /QOpenSys/usr/bin/system -Kkpiebv "DLTCMD CMD(QSYS2/BASH)" || echo "program doesn't exist"
+  #/QOpenSys/usr/bin/system -Kkpiebv "DLTLIB ${BUILDLIB}" || echo "library doesn't exist"
+  echo ''
+  echo 'FAILED!!'
+  echo ''
+  exit 1
+}
+
+/QOpenSys/usr/bin/system -Kkpiebv "CRTLIB LIB(${BUILDLIB}) TEXT('Jesse')" || echo "lib doesn't exist yet"
+/QOpenSys/usr/bin/system -Kkpiebv "DLTMOD MODULE(${BUILDLIB}/BASH)" || echo "module doesn't exist yet"
+/QOpenSys/usr/bin/system -Kkpiebv "DLTPGM PGM(${BUILDLIB}/BASH)" || echo "program doesn't exist yet"
+
+DIR=$(/QOpenSys/pkgs/bin/readlink -f $(dirname $0))
+
+/QOpenSys/usr/bin/system -Kkpiebv "CHGOBJOWN OBJ(QSYS/${BUILDLIB}) OBJTYPE(*LIB) NEWOWN(QSYS) CUROWNAUT(*REVOKE)" || oopsies
+/QOpenSys/usr/bin/system -Kkpiebv "CRTCMOD MODULE(${BUILDLIB}/BASH) SRCSTMF('${DIR}/bash.c') DEFINE(DO_BASH) SYSIFCOPT(*IFS64IO) TERASPACE(*YES *TSIFC) TGTCCSID(37) TGTRLS(${TGTRLS})" || oopsies
+/QOpenSys/usr/bin/system -Kkpiebv "CRTPGM PGM(${BUILDLIB}/BASH) MODULE(${BUILDLIB}/BASH) USRPRF(*USER) TEXT('Bash Utility') TGTRLS(${TGTRLS}) ACTGRP(*CALLER)" || oopsies
+/QOpenSys/usr/bin/system -Kkpiebv "CRTCMOD MODULE(${BUILDLIB}/SHSH) SRCSTMF('${DIR}/bash.c') SYSIFCOPT(*IFS64IO) TERASPACE(*YES *TSIFC) TGTCCSID(37) TGTRLS(${TGTRLS})" || oopsies
+/QOpenSys/usr/bin/system -Kkpiebv "CRTPGM PGM(${BUILDLIB}/SH) MODULE(${BUILDLIB}/SHELL3) USRPRF(*USER) TEXT('Sh Utility') TGTRLS(${TGTRLS}) ACTGRP(*CALLER)" || oopsies
+/QOpenSys/usr/bin/system -Kkpiebv "CHGOBJOWN OBJ(${BUILDLIB}/BASH) OBJTYPE(*PGM) NEWOWN(QSYS) CUROWNAUT(*REVOKE)" || oopsies
+/QOpenSys/usr/bin/system -Kkpiebv "CHGAUT OBJ('/qsys.lib/${BUILDLIB}.lib/BASH.pgm') USER(*PUBLIC) DTAAUT(*X) OBJAUT(*NONE)" || oopsies
+
+/QOpenSys/usr/bin/system -Kkpiebv "CRTCMD CMD(${BUILDLIB}/BASH) PGM(${BUILDLIB}/BASH) SRCSTMF('${DIR}/bash.cmdsrc') THDSAFE(*YES) TEXT('Bash')" || oopsies
+
+/QOpenSys/usr/bin/system -Kkpiebv "CRTCMD CMD(${BUILDLIB}/SH) PGM(${BUILDLIB}/SH) SRCSTMF('${DIR}/sh.cmdsrc') THDSAFE(*YES) TEXT('Bash')" || oopsies
+
+echo ''
+echo 'SUCCESS!!'
+echo ''
