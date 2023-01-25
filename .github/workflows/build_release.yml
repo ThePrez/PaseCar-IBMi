@@ -7,7 +7,7 @@ on:
 
 env:
   ssh_command: ssh ${{ secrets.IBMI_BUILD_USRPRF }}@${{ secrets.IBMI_BUILD_SYS }}
-  scp_dist_command: scp ${{ secrets.IBMI_BUILD_USRPRF }}@${{ secrets.IBMI_BUILD_SYS }}:/home/${{ secrets.IBMI_BUILD_USRPRF }}/build/${{ github.sha }}/pasecar-installer-${{ github.ref_name }}.jar .
+  scp_dist_command: scp ${{ secrets.IBMI_BUILD_USRPRF }}@${{ secrets.IBMI_BUILD_SYS }}:/home/${{ secrets.IBMI_BUILD_USRPRF }}/build/${{ github.sha }}/pasecar-installer-${{ github.ref_name }}.zip .
   remote_build_dir: /home/${{ secrets.IBMI_BUILD_USRPRF }}/build/${{ github.sha }}
   rsync_command: rsync -a --exclude='./.*' --exclude='./runners' --exclude='./.git' --exclude='./docs' --rsync-path=/QOpenSys/pkgs/bin/rsync ./ ${{ secrets.IBMI_BUILD_USRPRF }}@${{ secrets.IBMI_BUILD_SYS }}:/home/${{ secrets.IBMI_BUILD_USRPRF }}/build/${{ github.sha }}/
 
