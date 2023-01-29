@@ -3,15 +3,29 @@
 
 #include <sys/types.h>
 
-typedef int (*line_cb)(char* _line, pid_t _pid, int _is_err);
+typedef int (*line_cb)(char *_line, pid_t _pid, int _is_err, void *_arg);
 
-int runpase_main(int argc, char *argv[], line_cb _stderr, line_cb _stdout);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    int runpasev_cb(int *rc, int argc, char *argv[], line_cb _stderr, line_cb _stdout, void *_cb_arg);
 
-// typedef struct runpase_results {
-//     char* stdout;
-//     char* stderr;
-// } runpase_results;
-
-// int runpase_results(int _argc, char* argv[], runpase_results* _res);
+    int runpase_cb(int *_rc, const char *_cmd, line_cb _stderr, line_cb _stdout, void *_cb_arg);
+    int runpase_rconly_log(char *_cmd);
+    int runpase_rconly_logandprint(char *_cmd);
+    int runpase_rconly(char *_cmd);
+    int runpasev_rconly_log(int _argc, char *_cmd[]);
+    int runpasev_rconly_logandprint(int _argc, char *_cmd[]);
+    int runpasev_rconly(int _argc, char *_cmd[]);
+    void *PASE_init();
+    int PASE_execute(void *, const char *);
+    const char *PASE_stdout(void *);
+    const char *PASE_stderr(void *);
+    int PASE_exitCode(void *);
+    void PASE_dispose(void *);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

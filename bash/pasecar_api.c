@@ -41,28 +41,28 @@
 
 #pragma convert(37)
 
-#define WARN_MSG(e)         \
-    {                       \
-        fprintf(stderr, e); \
-        Qp0zLprintf(e);     \
+#define WARN_MSG(e)     \
+    {                   \
+        Qp0zLprintf(e); \
     }
 #define FATAL_MSG(e, c)     \
     {                       \
         fprintf(stderr, e); \
         Qp0zLprintf(e);     \
-        exit(c);            \
+        return c;           \
     }
 #define FATAL_MSG_1ARG(e, a, c) \
     {                           \
         fprintf(stderr, e, a);  \
         Qp0zLprintf(e, a);      \
-        exit(c);                \
+        return c;               \
     }
 
 typedef struct handle_stream_args
 {
     int fd;
     line_cb cb;
+    void *cb_arg;
     pid_t pid;
     int is_err;
 } handle_stream_args;
@@ -81,7 +81,7 @@ static void *handle_stream(void *__args)
         if (*linePtr == '\n' || pos >= (sizeof(line) - 1))
         {
             *linePtr = '\0';
-            int is_abort = _args->cb(line, _args->pid, _args->is_err);
+            int is_abort = (NULL == _args->cb) ? 0 : _args->cb(line, _args->pid, _args->is_err, _args->cb_arg);
             linePtr = line;
             memset(line, 0, sizeof(line));
         }
@@ -92,7 +92,8 @@ static void *handle_stream(void *__args)
     }
     if (0 != line[0])
     {
-        _args->cb(line, _args->pid, _args->is_err);
+        if (NULL != _args->cb)
+            _args->cb(line, _args->pid, _args->is_err, _args->cb_arg);
     }
 
     // Close out the descriptor now that data from the pipe is fully consumed
@@ -109,37 +110,37 @@ int is_bash_there()
 {
     return is_executable("/QOpenSys/pkgs/bin/bash");
 }
-int runpase_main(int argc, char *argv[], line_cb _stderr, line_cb _stdout)
+int runpasev_cb(int *_rc, int _argc, char *_argv[], line_cb _stderr, line_cb _stdout, void *_cb_arg)
 {
-    if (argc < 2)
+    if (_argc < 1)
     {
-        FATAL_MSG_1ARG("Usage: %s <command>\n", argv[0], 2);
+        FATAL_MSG("Improper API usage\n", 12);
     }
     int rc;
     // First things first, we need an arguments array set up...
-    int numArgs = argc + 4;
+    int numArgs = _argc + 4;
     char *child_argv[numArgs];
     child_argv[0] = "/QSYS.LIB/QP2SHELL.PGM"; // Note that "/QOpenSys/pkgs/bin/bash" won't work because PASE executables are not allowed
-    if (2 == argc)
+    if (1 == _argc)
     {
         int is_bash = is_bash_there();
         child_argv[1] = is_bash ? "/QOpenSys/pkgs/bin/bash" : "/QOpenSys/usr/bin/sh";
         child_argv[2] = is_bash ? "-lc" : "-c";
-        child_argv[3] = argv[1];
+        child_argv[3] = _argv[0];
         child_argv[4] = NULL;
     }
     else
     {
         struct stat sb;
-        if (!is_executable(argv[1]))
+        if (!is_executable(_argv[0]))
         {
-            FATAL_MSG_1ARG("Error: %s is not executable\n", argv[1], 8);
+            FATAL_MSG_1ARG("Error: %s is not executable\n", _argv[0], 8);
         }
-        for (int i = 1; i < argc; i++)
+        for (int i = 0; i < _argc; i++)
         {
-            child_argv[i] = argv[i];
+            child_argv[1 + i] = _argv[i];
         }
-        child_argv[argc] = NULL;
+        child_argv[1 + _argc] = NULL;
     }
 
     // ...and an environment for the child process...
@@ -158,8 +159,11 @@ int runpase_main(int argc, char *argv[], line_cb _stderr, line_cb _stdout)
         sprintf(logname, "LOGNAME=%s", getenv("LOGNAME"));
     }
     envp[3] = logname;
-    envp[4] = (char *)NULL;
-    // envp[4] = "QIBM_PASE_DESCRIPTOR_STDIO=B";
+    char *QIBM_PASE_DESCRIPTOR_STDIO = getenv("QIBM_PASE_DESCRIPTOR_STDIO");
+    char child_QIBM_PASE_DESCRIPTOR_STDIO[32];
+    sprintf(child_QIBM_PASE_DESCRIPTOR_STDIO, "QIBM_PASE_DESCRIPTOR_STDIO=%c", (NULL == QIBM_PASE_DESCRIPTOR_STDIO) ? 'T' : QIBM_PASE_DESCRIPTOR_STDIO[0]);
+
+    envp[4] = child_QIBM_PASE_DESCRIPTOR_STDIO;
     envp[5] = (char *)NULL;
 
     // ...and we need to set up the pipes...
@@ -190,7 +194,7 @@ int runpase_main(int argc, char *argv[], line_cb _stderr, line_cb _stdout)
                              3,             // fd_count
                              fd_map,        // fd_map[]
                              &inherit,      // inherit
-                             child_argv,    // argv
+                             child_argv,    // _argv
                              envp);         // envp
     if (child_pid == -1)
     {
@@ -203,6 +207,7 @@ int runpase_main(int argc, char *argv[], line_cb _stderr, line_cb _stdout)
     pthread_t stderr_thread;
     handle_stream_args stderr_reader_args;
     stderr_reader_args.cb = _stderr;
+    stderr_reader_args.cb_arg = _cb_arg;
     stderr_reader_args.fd = stderrFds[0];
     stderr_reader_args.pid = child_pid;
     stderr_reader_args.is_err = 1;
@@ -218,6 +223,7 @@ int runpase_main(int argc, char *argv[], line_cb _stderr, line_cb _stdout)
     }
     handle_stream_args stdout_reader_args;
     stdout_reader_args.cb = _stdout;
+    stdout_reader_args.cb_arg = _cb_arg;
     stdout_reader_args.fd = stdoutFds[0];
     stdout_reader_args.pid = child_pid;
     stdout_reader_args.is_err = 0;
@@ -237,6 +243,11 @@ int runpase_main(int argc, char *argv[], line_cb _stderr, line_cb _stdout)
 
     // Wait for the child process to finish (should be already done since the pipe is closed)
     waitpid(child_pid, &rc, 0);
+    *_rc = rc;
+    return 0;
+}
 
-    return rc;
+int runpase_cb(int *_rc, const char *_cmd, line_cb _stderr, line_cb _stdout, void *_cb_arg)
+{
+    return runpasev_cb(_rc, 1, &_cmd, _stderr, _stdout, _cb_arg);
 }
