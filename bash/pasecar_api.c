@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/wait.h>
 #include "pasecar.h"
 
 #pragma convert(37)
@@ -110,8 +111,9 @@ int is_bash_there()
 {
     return is_executable("/QOpenSys/pkgs/bin/bash");
 }
-int runpasev_cb(int *_rc, int _argc, char *_argv[], line_cb _stderr, line_cb _stdout, void *_cb_arg)
+int runpasev_cb(int *_rc, pid_t* _pid, boolean _async, boolean _binary, int _argc, char *_argv[], line_cb _stderr, line_cb _stdout, void *_cb_arg)
 {
+    *_pid = -1;
     if (_argc < 1)
     {
         FATAL_MSG("Improper API usage\n", 12);
@@ -159,11 +161,7 @@ int runpasev_cb(int *_rc, int _argc, char *_argv[], line_cb _stderr, line_cb _st
         sprintf(logname, "LOGNAME=%s", getenv("LOGNAME"));
     }
     envp[3] = logname;
-    char *QIBM_PASE_DESCRIPTOR_STDIO = getenv("QIBM_PASE_DESCRIPTOR_STDIO");
-    char child_QIBM_PASE_DESCRIPTOR_STDIO[32];
-    sprintf(child_QIBM_PASE_DESCRIPTOR_STDIO, "QIBM_PASE_DESCRIPTOR_STDIO=%c", (NULL == QIBM_PASE_DESCRIPTOR_STDIO) ? 'T' : QIBM_PASE_DESCRIPTOR_STDIO[0]);
-
-    envp[4] = child_QIBM_PASE_DESCRIPTOR_STDIO;
+    envp[4] = _binary ? "QIBM_PASE_DESCRIPTOR_STDIO=B": "QIBM_PASE_DESCRIPTOR_STDIO=T";
     envp[5] = (char *)NULL;
 
     // ...and we need to set up the pipes...
@@ -200,6 +198,7 @@ int runpasev_cb(int *_rc, int _argc, char *_argv[], line_cb _stderr, line_cb _st
     {
         FATAL_MSG_1ARG("Error spawning child process: %s\n", strerror(errno), -1);
     }
+    *_pid = child_pid;
     close(stdoutFds[1]);
     close(stderrFds[1]);
 
@@ -241,13 +240,17 @@ int runpasev_cb(int *_rc, int _argc, char *_argv[], line_cb _stderr, line_cb _st
     close(stdoutFds[0]);
     close(stderrFds[0]);
 
+    if(_async) {
+        *_rc = -1;
+        return 0;
+    }
     // Wait for the child process to finish (should be already done since the pipe is closed)
     waitpid(child_pid, &rc, 0);
     *_rc = rc;
     return 0;
 }
 
-int runpase_cb(int *_rc, const char *_cmd, line_cb _stderr, line_cb _stdout, void *_cb_arg)
+int runpase_cb(int *_rc,pid_t* _pid, boolean _async,boolean _binary, const char *_cmd, line_cb _stderr, line_cb _stdout, void *_cb_arg)
 {
-    return runpasev_cb(_rc, 1, &_cmd, _stderr, _stdout, _cb_arg);
+    return runpasev_cb(_rc, _pid, _async, _binary, 1, &_cmd, _stderr, _stdout, _cb_arg);
 }
