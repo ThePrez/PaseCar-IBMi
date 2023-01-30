@@ -60,7 +60,7 @@ const char *PASE_stderr(void *_handle)
     runpase_results *obj = (runpase_results *)_handle;
     return obj->stdout->c_str();
 }
- int PASE_kill(void *_handle)
+int PASE_kill(void *_handle)
 {
     runpase_results *obj = (runpase_results *)_handle;
     return kill(obj->pid, SIGTERM);

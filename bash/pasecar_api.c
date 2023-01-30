@@ -250,7 +250,93 @@ int runpasev_cb(int *_rc, pid_t* _pid, boolean _async, boolean _binary, int _arg
     return 0;
 }
 
+int runpasev_nd(int *_rc, pid_t* _pid, boolean _async, int _argc, char *_argv[])
+{
+    *_pid = -1;
+    if (_argc < 1)
+    {
+        FATAL_MSG("Improper API usage\n", 12);
+    }
+    int rc;
+    // First things first, we need an arguments array set up...
+    int numArgs = _argc + 4;
+    char *child_argv[numArgs];
+    child_argv[0] = "/QSYS.LIB/QP2SHELL.PGM"; // Note that "/QOpenSys/pkgs/bin/bash" won't work because PASE executables are not allowed
+    if (1 == _argc)
+    {
+        int is_bash = is_bash_there();
+        child_argv[1] = is_bash ? "/QOpenSys/pkgs/bin/bash" : "/QOpenSys/usr/bin/sh";
+        child_argv[2] = is_bash ? "-lc" : "-c";
+        child_argv[3] = _argv[0];
+        child_argv[4] = NULL;
+    }
+    else
+    {
+        struct stat sb;
+        if (!is_executable(_argv[0]))
+        {
+            FATAL_MSG_1ARG("Error: %s is not executable\n", _argv[0], 8);
+        }
+        for (int i = 0; i < _argc; i++)
+        {
+            child_argv[1 + i] = _argv[i];
+        }
+        child_argv[1 + _argc] = NULL;
+    }
+
+    // ...and an environment for the child process...
+    char *envp[10];
+    envp[0] = "QIBM_MULTI_THREADED=Y";
+    envp[1] = "QIBM_USE_DESCRIPTOR_STDIO=Y";
+    envp[2] = "PASE_STDIO_ISATTY=N";
+    struct passwd *pd;
+    char logname[20];
+    if (NULL != (pd = getpwuid(getuid())))
+    {
+        sprintf(logname, "LOGNAME=%s", pd->pw_name);
+    }
+    else
+    {
+        sprintf(logname, "LOGNAME=%s", getenv("LOGNAME"));
+    }
+    envp[3] = logname;
+    envp[4] = "QIBM_PASE_DESCRIPTOR_STDIO=T";
+    envp[5] = (char *)NULL;
+
+
+    // ...and we want to spawn a multithread-capable job...
+    struct inheritance inherit;
+    memset(&inherit, 0, sizeof(inherit));
+    inherit.flags = SPAWN_SETTHREAD_NP;
+
+    // ...and we can FINALLY run our command!
+    pid_t child_pid = spawnp(child_argv[0], // executable
+                             0,             // fd_count
+                             NULL,        // fd_map[]
+                             &inherit,      // inherit
+                             child_argv,    // _argv
+                             envp);         // envp
+    if (child_pid == -1)
+    {
+        FATAL_MSG_1ARG("Error spawning child process: %s\n", strerror(errno), -1);
+    }
+    *_pid = child_pid;
+
+    if(_async) {
+        *_rc = -1;
+        return 0;
+    }
+    // Wait for the child process to finish (should be already done since the pipe is closed)
+    waitpid(child_pid, &rc, 0);
+    *_rc = rc;
+    return 0;
+}
+
 int runpase_cb(int *_rc,pid_t* _pid, boolean _async,boolean _binary, const char *_cmd, line_cb _stderr, line_cb _stdout, void *_cb_arg)
 {
     return runpasev_cb(_rc, _pid, _async, _binary, 1, &_cmd, _stderr, _stdout, _cb_arg);
+}
+int runpase_nd(int *_rc,pid_t* _pid, boolean _async,const char *_cmd)
+{
+    return runpasev_nd(_rc, _pid, _async, 1, &_cmd);
 }

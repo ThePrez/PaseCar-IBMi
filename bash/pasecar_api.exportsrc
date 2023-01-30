@@ -1,6 +1,8 @@
 STRPGMEXP  PGMLVL(*CURRENT)
   EXPORT SYMBOL('runpase_cb')
   EXPORT SYMBOL('runpasev_cb')
+  EXPORT SYMBOL('runpase_nd')
+  EXPORT SYMBOL('runpasev_nd')
   EXPORT SYMBOL('runpase_rconly')
   EXPORT SYMBOL('runpase_rconly_log')
   EXPORT SYMBOL('runpase_rconly_logandprint')

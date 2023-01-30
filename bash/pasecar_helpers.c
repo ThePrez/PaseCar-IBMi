@@ -58,6 +58,13 @@ int runpase_rconly(char *_cmd)
     runpase_cb(&rc,&pid,false,false,_cmd, ignoreHandler, ignoreHandler, NULL);
     return rc;
 }
+int runpase_rconly_nd(char *_cmd)
+{
+    int rc = -1;
+    pid_t pid;
+    runpase_nd(&rc,&pid,false,_cmd);
+    return rc;
+}
 int runpase_rconly_log(char *_cmd)
 {
     int rc = -1;
@@ -105,5 +112,12 @@ int runpasev_rconly(int _argc, char *_cmd[])
     int rc = -1;
     pid_t pid;
     runpasev_cb(&rc,&pid,false,true, _argc, _cmd, ignoreHandler, ignoreHandler, NULL);
+    return rc;
+}
+int runpasev_rconly_nd(int _argc, char *_cmd[])
+{
+    int rc = -1;
+    pid_t pid;
+    runpasev_nd(&rc,&pid,false, _argc, _cmd);
     return rc;
 }
