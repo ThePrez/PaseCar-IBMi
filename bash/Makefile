@@ -33,7 +33,7 @@ cleanlib:
 	/QOpenSys/usr/bin/system -Kkpiebv "CRTCMOD MODULE(${BUILDLIB}/PASECARHLP) SRCSTMF('${DIR}/pasecar_helpers.c') SYSIFCOPT(*IFS64IO) TERASPACE(*YES *TSIFC) TGTCCSID(37) TGTRLS(${TGTRLS})"
 
 /qsys.lib/${BUILDLIB}.lib/pasecar.srvpgm: /qsys.lib/${BUILDLIB}.lib/pasecarapi.module /qsys.lib/${BUILDLIB}.lib/pasecarap2.module /qsys.lib/${BUILDLIB}.lib/pasecarhlp.module
-	/QOpenSys/usr/bin/system -Kkpiebv "CRTSRVPGM SRVPGM(${BUILDLIB}/PASECAR) MODULE(${BUILDLIB}/PASECARAPI ${BUILDLIB}/PASECARAP2 ${BUILDLIB}/PASECARHLP) SRCSTMF('${DIR}/pasecar_api.exportsrc') USRPRF(*USER)  TEXT('sh Utility') TGTRLS(${TGTRLS}) ACTGRP(*CALLER)"
+	/QOpenSys/usr/bin/system -Kkpiebv "CRTSRVPGM SRVPGM(${BUILDLIB}/PASECAR) MODULE(${BUILDLIB}/PASECARAPI ${BUILDLIB}/PASECARAP2 ${BUILDLIB}/PASECARHLP) SRCSTMF('${DIR}/pasecar.bnd') USRPRF(*USER)  TEXT('sh Utility') TGTRLS(${TGTRLS}) ACTGRP(*CALLER)"
 
 
 /qsys.lib/${BUILDLIB}.lib/%.cmd: /qsys.lib/${BUILDLIB}.lib/%.pgm

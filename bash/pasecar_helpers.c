@@ -35,7 +35,8 @@ typedef struct ignore_handler_arg
 } ignore_handler_arg;
 int ignoreHandler(char *_line, pid_t _pid, int _is_err, void *_arg)
 {
-    if(NULL ==_arg) {
+    if (NULL == _arg)
+    {
         return 0;
     }
     ignore_handler_arg *arg = (ignore_handler_arg *)_arg;
@@ -45,7 +46,7 @@ int ignoreHandler(char *_line, pid_t _pid, int _is_err, void *_arg)
     }
     if (arg->do_print)
     {
-        FILE* dest = _is_err ? stderr : stdout;
+        FILE *dest = _is_err ? stderr : stdout;
         fprintf(dest, "%s: %s\n", _line);
         fflush(dest);
     }
@@ -55,14 +56,14 @@ int runpase_rconly(char *_cmd)
 {
     int rc = -1;
     pid_t pid;
-    runpase_cb(&rc,&pid,false,false,_cmd, ignoreHandler, ignoreHandler, NULL);
+    runpase_cb(&rc, &pid, false, false, _cmd, ignoreHandler, ignoreHandler, NULL);
     return rc;
 }
 int runpase_rconly_nd(char *_cmd)
 {
     int rc = -1;
     pid_t pid;
-    runpase_nd(&rc,&pid,false,_cmd);
+    runpase_nd(&rc, &pid, false, _cmd);
     return rc;
 }
 int runpase_rconly_log(char *_cmd)
@@ -72,7 +73,7 @@ int runpase_rconly_log(char *_cmd)
     ignore_handler_arg handler_arg;
     handler_arg.do_joblog = 1;
     handler_arg.do_print = 0;
-    runpase_cb(&rc, &pid,false,false,_cmd, ignoreHandler, ignoreHandler, &handler_arg);
+    runpase_cb(&rc, &pid, false, false, _cmd, ignoreHandler, ignoreHandler, &handler_arg);
     return rc;
 }
 int runpase_rconly_logandprint(char *_cmd)
@@ -82,7 +83,7 @@ int runpase_rconly_logandprint(char *_cmd)
     ignore_handler_arg handler_arg;
     handler_arg.do_joblog = 1;
     handler_arg.do_print = 1;
-    runpase_cb(&rc,&pid,false,false, _cmd, ignoreHandler, ignoreHandler, &handler_arg);
+    runpase_cb(&rc, &pid, false, false, _cmd, ignoreHandler, ignoreHandler, &handler_arg);
     return rc;
 }
 
@@ -93,7 +94,7 @@ int runpasev_rconly_log(int _argc, char *_cmd[])
     ignore_handler_arg handler_arg;
     handler_arg.do_joblog = 1;
     handler_arg.do_print = 0;
-    runpasev_cb(&rc,&pid, _argc,false,false, _cmd, ignoreHandler, ignoreHandler, &handler_arg);
+    runpasev_cb(&rc, &pid, false, false,_argc,  _cmd, ignoreHandler, ignoreHandler, &handler_arg);
     return rc;
 }
 
@@ -104,20 +105,20 @@ int runpasev_rconly_logandprint(int _argc, char *_cmd[])
     ignore_handler_arg handler_arg;
     handler_arg.do_joblog = 1;
     handler_arg.do_print = 1;
-    runpasev_cb(&rc,&pid, _argc,false,false, _cmd, ignoreHandler, ignoreHandler, &handler_arg);
+    runpasev_cb(&rc, &pid,false, false, _argc,  _cmd, ignoreHandler, ignoreHandler, &handler_arg);
     return rc;
 }
 int runpasev_rconly(int _argc, char *_cmd[])
 {
     int rc = -1;
     pid_t pid;
-    runpasev_cb(&rc,&pid,false,true, _argc, _cmd, ignoreHandler, ignoreHandler, NULL);
+    runpasev_cb(&rc, &pid, false, true, _argc, _cmd, ignoreHandler, ignoreHandler, NULL);
     return rc;
 }
 int runpasev_rconly_nd(int _argc, char *_cmd[])
 {
     int rc = -1;
     pid_t pid;
-    runpasev_nd(&rc,&pid,false, _argc, _cmd);
+    runpasev_nd(&rc, &pid, false, _argc, _cmd);
     return rc;
 }
