@@ -10,4 +10,4 @@ CALL PGM(PASECAR/BASHJL) PARM('echo hello world')
 ```
 ## API set
 
-Sorry my documentation is crap. See [the header source code](blob/main/bash/pasecar.h) for some comments
+Sorry my documentation is crap. See [the header source code](bash/pasecar.h) for some comments
