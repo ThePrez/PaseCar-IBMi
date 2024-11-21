@@ -179,6 +179,13 @@ int runpasev_cb(int *_rc, pid_t* _pid, boolean _async, boolean _binary, int _arg
 
     int fd_map[3];
     fd_map[0] = open("/dev/null", O_RDONLY);
+    //Ensure open was successful 
+    if(fd_map[0] < 0)
+    {
+        FATAL_MSG("failure opening /dev/null", 13);
+    }
+
+
     fd_map[1] = stdoutFds[1];
     fd_map[2] = stderrFds[1];
 
@@ -201,6 +208,7 @@ int runpasev_cb(int *_rc, pid_t* _pid, boolean _async, boolean _binary, int _arg
     *_pid = child_pid;
     close(stdoutFds[1]);
     close(stderrFds[1]);
+    close(fd_map[0]);
 
     // Now time to read from the child
     pthread_t stderr_thread;
